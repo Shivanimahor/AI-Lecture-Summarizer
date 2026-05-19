@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Lecture Summarizer</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f3f5;
+            margin: 0;
+            padding: 0;
+            color: #222;
+        }
+
+        .topbar {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar a {
+            text-decoration: none;
+            color: white;
+            background: #4b4be0;
+            padding: 8px 14px;
+            border-radius: 8px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 30px auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4b4be0;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .sub {
+            text-align: center;
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 40px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        }
+
+        .upload-box, .result-box {
+            background: white;
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        .drop-area {
+            border: 2px dashed #cfcfd8;
+            border-radius: 14px;
+            padding: 40px;
+            text-align: center;
+            margin: 25px 0;
+            background: #fafafa;
+        }
+
+        .subject-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-top: 15px;
+        }
+
+        .options {
+            margin: 20px 0;
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            background: #4b4be0;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #3939c9;
+        }
+
+        .small-btn {
+            width: auto;
+            padding: 10px 18px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background: #4b4be0;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: #e8f7e8;
+            color: green;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .quiz-card {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .correct {
+            color: green;
+            font-weight: bold;
+        }
+
+        .wrong {
+            color: red;
+            font-weight: bold;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    <div><strong>Welcome, {{ username }}</strong></div>
+    <div><a href="/logout">Logout</a></div>
+</div>
+
+<div class="container">
+
+    <h1>Transform Lectures into Smart Notes</h1>
+    <p class="sub">Upload your lecture files and get summaries, notes and MCQ quiz</p>
+
+    <div class="cards">
+        <div class="card" onclick="document.getElementById('upload-section').scrollIntoView();">
+            <h3>Upload Lecture</h3>
+            <p>Upload audio, video, or text files of your lectures</p>
+        </div>
+
+        <div class="card" onclick="document.getElementById('options-section').scrollIntoView();">
+            <h3>AI Processing</h3>
+            <p>Our AI reads, transcribes, and analyzes your content</p>
+        </div>
+
+        <div class="card" onclick="document.getElementById('results-section').scrollIntoView();">
+            <h3>Get Results</h3>
+            <p>Receive summaries, notes, and MCQ quiz instantly</p>
+        </div>
+    </div>
+
+    <div class="upload-box" id="upload-section">
+        <h2>Upload Your Lecture</h2>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <div class="drop-area">
+                <input type="file" name="lecture_file" required>
+
+                <input 
+                    type="text" 
+                    name="subject" 
+                    placeholder="Enter Subject Name"
+                    class="subject-input"
+                >
+            </div>
+
+            <h3 id="options-section">Processing Options</h3>
+
+            <div class="options">
+                <label>
+                    <input type="checkbox" name="generate_summary">
+                    Generate Summary
+                </label>
+
+                <label>
+                    <input type="checkbox" name="create_notes">
+                    Create Notes
+                </label>
+
+                <label>
+                    <input type="checkbox" name="generate_quiz">
+                    Generate Quiz
+                    <label>
+                   <input type="checkbox" name="generate_video">
+                  Generate AI Video
+         </label>
+
+         <select name="video_language" class="subject-input">
+    <option value="en">English Voice</option>
+    <option value="hi">Hindi Voice</option>
+     </select>
+                </label>
+            </div>
+
+            <button type="submit" class="btn">Process Lecture</button>
+        </form>
+    </div>
+
+    <div id="results-section"></div>
+
+    {% if transcript %}
+        <button onclick="toggleTranscript()" class="small-btn">
+            Show / Hide Transcript
+        </button>
+
+        <div class="result-box" id="transcriptBox" style="display:none;">
+            <h2>Transcript</h2>
+            <pre>{{ transcript }}</pre>
+        </div>
+
+        <script>
+            function toggleTranscript() {
+                var box = document.getElementById("transcriptBox");
+
+                if (box.style.display === "none") {
+                    box.style.display = "block";
+                } else {
+                    box.style.display = "none";
+                }
+            }
+        </script>
+    {% endif %}
+
+    {% if summary %}
+        <div class="result-box">
+            <h2>Summary</h2>
+            <pre>{{ summary }}</pre>
+        </div>
+    {% endif %}
+
+    {% if notes %}
+        <div class="result-box">
+            <h2>Notes</h2>
+            <pre>{{ notes }}</pre>
+
+            <a href="/download_notes?data={{ notes|urlencode }}">
+                <button type="button" class="btn">Download Notes</button>
+            </a>
+        </div>
+    {% endif %}
+   {% if video_ready %}
+   
+<div class="result-box">
+
+    <h2>Generated AI Video</h2>
+
+    <video width="100%" controls>
+        <source src="/static/lecture_video.mp4?v={{ range(1,999999)|random }}" type="video/mp4">
+    </video>
+
+</div>
+
+{% endif %}
+
+    {% if score %}
+        <div class="score-box">
+            Your Score: {{ score }}
+        </div>
+    {% endif %}
+
+    {% if quiz_data %}
+        <div class="result-box">
+            <h2>Quiz</h2>
+
+            <form method="POST" action="/submit_quiz">
+                {% for item in quiz_data %}
+                {% set q_index = loop.index0 %}
+
+                <div class="quiz-card">
+                    <p><strong>Q{{ loop.index }}. {{ item.question }}</strong></p>
+
+                    {% for option in item.options %}
+                    <label>
+                        <input 
+                            type="radio" 
+                            name="answer_{{ q_index }}" 
+                            value="{{ option }}"
+                            {% if item.selected is defined and item.selected == option %}checked{% endif %}
+                        >
+                        {{ option }}
+                    </label>
+                    <br>
+                    {% endfor %}
+
+                    {% if item.selected is defined %}
+                        {% if item.selected == item.answer %}
+                            <p class="correct">Correct</p>
+                        {% else %}
+                            <p class="wrong">Wrong</p>
+                            <p><strong>Correct Answer:</strong> {{ item.answer }}</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                {% endfor %}
+
+                <button type="submit" class="btn">Submit Quiz</button>
+            </form>
+        </div>
+    {% endif %}
+
+</div>
+ </div>
+
+<div class="result-box">
+
+    <h2>Student Feedback</h2>
+
+    <form method="POST" action="/feedback">
+
+       <select 
+    name="rating" 
+    style="
+        width:200px;
+        padding:12px;
+        border-radius:10px;
+        border:1px solid #ccc;
+        font-size:16px;
+    "
+>
+
+    <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+    <option value="4">⭐⭐⭐⭐ Good</option>
+    <option value="3">⭐⭐⭐ Average</option>
+    <option value="2">⭐⭐ Poor</option>
+    <option value="1">⭐ Bad</option>
+
+</select>
+        <br><br>
+
+        <textarea 
+    name="feedback"
+    placeholder="Write your feedback..."
+    style="
+        width:100%;
+        height:180px;
+        padding:15px;
+        border-radius:10px;
+        border:1px solid #ccc;
+        font-size:18px;
+        box-sizing:border-box;
+        resize:none;
+    "
+></textarea>
+
+        <br><br>
+
+        <button 
+    type="submit"
+    style="
+        width:auto;
+        padding:12px 25px;
+        border:none;
+        border-radius:8px;
+        background:#4b4be0;
+        color:white;
+        font-size:18px;
+        cursor:pointer;
+    "
+>
+    Submit Feedback
+</button>
+
+    </form>
+    {% if feedbacks %}
+
+<hr style="margin:30px 0;">
+
+<h2>Student Reviews</h2>
+
+{% for item in feedbacks %}
+
+<div style="
+    background:#fafafa;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:15px;
+    border:1px solid #ddd;
+">
+
+    <h3 style="
+        margin:0;
+        color:#4b4be0;
+    ">
+        {{ item.username }}
+    </h3>
+
+    <p style="
+        margin:8px 0;
+        font-size:18px;
+    ">
+        Rating: {{ item.rating }}/5
+    </p>
+
+    <p style="
+        margin:0;
+        color:#333;
+        font-size:16px;
+    ">
+        {{ item.feedback }}
+    </p>
+
+</div>
+
+{% endfor %}
+
+{% endif %}
+
+</div>
+
+</body>
+</html>
